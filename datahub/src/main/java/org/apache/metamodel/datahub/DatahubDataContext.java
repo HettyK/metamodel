@@ -32,6 +32,7 @@ import org.apache.metamodel.QueryPostprocessDataContext;
 import org.apache.metamodel.UpdateScript;
 import org.apache.metamodel.UpdateableDataContext;
 import org.apache.metamodel.data.DataSet;
+import org.apache.metamodel.datahub.utils.JsonParserHelper;
 import org.apache.metamodel.query.FilterItem;
 import org.apache.metamodel.query.Query;
 import org.apache.metamodel.schema.Column;
@@ -40,11 +41,12 @@ import org.apache.metamodel.schema.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonParseException;
 
 public class DatahubDataContext extends QueryPostprocessDataContext implements
         UpdateableDataContext {
-    private static final Logger logger = LoggerFactory.getLogger(DatahubDataContext.class);
-
+    private static final Logger logger = LoggerFactory
+            .getLogger(DatahubDataContext.class);
 
     private DatahubConnection _connection;
 
@@ -64,6 +66,7 @@ public class DatahubDataContext extends QueryPostprocessDataContext implements
     @Override
     public DataSet executeQuery(final Query query) {
         Table table = query.getFromClause().getItem(0).getTable();
+        //TODO dummy implementation
         return new DatahubDataSet(table.getColumns());
 
     }
@@ -71,90 +74,104 @@ public class DatahubDataContext extends QueryPostprocessDataContext implements
     @Override
     protected Number executeCountQuery(Table table,
             List<FilterItem> whereItems, boolean functionApproximationAllowed) {
+        //TODO dummy implementation
         return 3;
     }
 
     @Override
     protected Schema getMainSchema() throws MetaModelException {
-        HttpClient client = _connection.getHttpClient();
-        String uri = _connection.getDatahubUrl() + "/" + getMainSchemaName() + ".tables";
-        logger.debug("request {}", uri);
+        String schemaName = getMainSchemaName();
+        String uri = _connection.getDatahubUri() + "/" + schemaName
+                + ".tables";
         HttpGet request = new HttpGet(uri);
-        request.addHeader("Accept", "application/json");
-        request.addHeader("Accept-Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.7");
         try {
-            //HttpResponse response = executeRequest(client, request);
-            //String result = EntityUtils.toString(response.getEntity());
-            //logger.debug(result);
-            //JsonFactory factory = new JsonFactory();
-            //JsonParser parser = factory.createParser(result);
-            
+            Table[] tables = getTables(schemaName, request);
+            DatahubSchema schema = new DatahubSchema(schemaName, tables);
+            return schema;
+
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        // TODO parse the response and create a schema
-        return new DatahubSchema(getMainSchemaName());
     }
 
-    private HttpResponse executeRequest(HttpClient client, HttpGet request)
+    private Table[] getTables(String schemaName, HttpGet request)
+            throws IOException, ClientProtocolException, JsonParseException {
+        HttpResponse response = executeRequest(request);
+        String result = EntityUtils.toString(response.getEntity());
+        List<String> tableNames = JsonParserHelper.parseArray(result);
+        Table[] tables = new DatahubTable[tableNames.size()];
+        for (int i = 0 ; i < tableNames.size() ; ++i) {
+            List<String> columnNames = getColumnNames(schemaName, tableNames.get(i));
+            tables[i] = new DatahubTable(tableNames.get(i), columnNames);
+        }
+        return tables;
+    }
+
+    private List<String> getColumnNames(String schemaName, String tableName) {
+        String uri = _connection.getDatahubUri() + "/" + schemaName + "/" + tableName + ".columns";
+        logger.debug("request {}", uri);
+        HttpGet request = new HttpGet(uri);
+        try {
+            HttpResponse response = executeRequest(request);
+            String result = EntityUtils.toString(response.getEntity());
+            List<String> columnNames = JsonParserHelper.parseArray(result);
+            return columnNames;
+
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public Schema testGetMainSchema() {
+        return getMainSchema();
+    }
+
+    private HttpResponse executeRequest(HttpGet request)
             throws IOException, ClientProtocolException {
-        HttpResponse response = client.execute(
-                _connection.getHttpHost(), request);
+
+        HttpClient httpClient = _connection.getHttpClient();
+        HttpResponse response = httpClient.execute(request, _connection.getContext());
+
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode == 403) {
-            logger.error("Access is denied");
-            logger.error("Response received as " + response);
             throw new AccessControlException(
                     "You are not authorized to access the service");
         }
+        if (statusCode == 404) {
+            throw new AccessControlException(
+                    "Could not connect to Datahub: not found");
+        }
         if (statusCode != 200) {
-            logger.error(
-                    "Unexpected response status code: {}, response entity:\n{}",
-                    statusCode, EntityUtils.toString(response.getEntity()));
-            throw new IllegalStateException(
-                    "Unexpected response status code: " + statusCode);
+            throw new IllegalStateException("Unexpected response status code: "
+                    + statusCode);
         }
         return response;
     }
 
-    // http://localhost:8665/DataCleaner-monitor/repository/demo/datastores/Golden record.schemas
-
     @Override
     protected String getMainSchemaName() throws MetaModelException {
-//        HttpClient client = _connection.getHttpClient();
-//        String uri = _connection.getDatahubUrl() + ".schemas";
-//        HttpGet request = new HttpGet(uri);
-//        request.addHeader("Accept", "application/json");
-//        request.addHeader("Accept-Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.7");
-//        try {
-//            HttpResponse response = executeRequest(client, request);
-//        } catch (Exception e) {
-//            throw new IllegalStateException(e);
-//        }
-//        return new DatahubSchema(getMainSchemaName());
-        return "PUBLIC";
+        String uri = _connection.getDatahubUri() + ".schemas";
+        logger.debug("request {}", uri);
+        HttpGet request = new HttpGet(uri);
+        try {
+            HttpResponse response = executeRequest(request);
+            String result = EntityUtils.toString(response.getEntity());
+            List<String> schemas = JsonParserHelper.parseArray(result);
+            if (schemas.size() > 1) {
+                return schemas.get(1);
+            } else {
+                // expecting numbers to be at least 2
+                return "";
+            }
+
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
     protected DataSet materializeMainSchemaTable(Table table, Column[] columns,
             int maxRows) {
-        // executes a simple query and returns the result
-        // final StringBuilder sb = new StringBuilder();
-        // sb.append("SELECT ");
-        // for (int i = 0; i < columns.length; i++) {
-        // if (i != 0) {
-        // sb.append(',');
-        // }
-        // sb.append(columns[i].getName());
-        // }
-        // sb.append(" FROM ");
-        // sb.append(table.getName());
-        //
-        // if (maxRows > 0) {
-        // sb.append(" LIMIT " + maxRows);
-        // }
-        //
-        // final QueryResult queryResult = executeSoqlQuery(sb.toString());
         return new DatahubDataSet(columns);
     }
 

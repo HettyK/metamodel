@@ -29,7 +29,8 @@ import org.apache.metamodel.data.Row;
 import org.apache.metamodel.schema.Column;
 
 /**
- *  dataset with fixed query result of 3 rows
+ * dataset with fixed query result of 3 rows
+ * 
  * @author hetty
  *
  */
@@ -40,14 +41,17 @@ public class DatahubDataSet extends AbstractDataSet {
     private Object[] record;
 
     DatahubDataSet(Column[] columns) {
+        
+        // TODO dummy implementation
         super(columns);
         queryResult = new ArrayList<Object[]>();
-        queryResult
-                .add(new Object[] { new Integer(1), "John", new Integer(18) });
-        queryResult
-                .add(new Object[] { new Integer(2), "Mary", new Integer(20) });
-        queryResult.add(new Object[] { new Integer(3), "Gwendolyn",
-                new Integer(4) });
+        for (int y = 0; y < 3; ++y) {
+            Object[] row = new Object[columns.length];
+            for (int i = 0; i < columns.length; ++i) {
+                row[i] = "row" + y + ":value" + i;
+            }
+            queryResult.add(row);
+        }
         _index = new AtomicInteger();
     }
 
@@ -66,7 +70,7 @@ public class DatahubDataSet extends AbstractDataSet {
     @Override
     public Row getRow() {
         if (record != null) {
-            final DataSetHeader header = super.getHeader(); 
+            final DataSetHeader header = super.getHeader();
             return new DefaultRow(header, record);
         }
         return null;

@@ -18,6 +18,8 @@
  */
 package org.apache.metamodel.datahub;
 
+import java.util.List;
+
 import org.apache.metamodel.schema.AbstractTable;
 import org.apache.metamodel.schema.Column;
 import org.apache.metamodel.schema.ColumnType;
@@ -27,7 +29,9 @@ import org.apache.metamodel.schema.Schema;
 import org.apache.metamodel.schema.TableType;
 
 /**
- * Dummy implementation of Datahub table, final version must be implemented in metamodel
+ * Dummy implementation of Datahub table, final version must be implemented in
+ * metamodel
+ * 
  * @author hetty
  *
  */
@@ -38,9 +42,34 @@ public class DatahubTable extends AbstractTable {
      */
     private static final long serialVersionUID = 1L;
     private String _name;
+    private Column[] _columns;
 
-    public DatahubTable(String name) {
+    public DatahubTable(String name, List<String> columnNames) {
         _name = name;
+        _columns = createColumns(columnNames);
+    }
+
+    private Column[] createColumns(List<String> columnNames) {
+        Column[] columns = new Column[columnNames.size()];
+        for (int i = 0; i < columnNames.size(); ++i) {
+
+            // name the name of the column
+            // type the type of the column
+            // table the table which the constructed column will pertain to
+            // columnNumber the column number of the column
+            // columnSize the size of the column
+            // nativeType the native type of the column
+            // nullable whether the column's values are nullable
+            // remarks the remarks of the column
+            // indexed whether the column is indexed or not
+            // quote the quote character(s) of the column
+            // primaryKey whether the column is a primary key or not
+            columns[i] = new ImmutableColumn(columnNames.get(i),
+                    ColumnType.VARCHAR, this, i + 1, 10, "string", true,
+                    "remarks", false, null, false);
+        }
+
+        return columns;
     }
 
     @Override
@@ -50,11 +79,7 @@ public class DatahubTable extends AbstractTable {
 
     @Override
     public Column[] getColumns() {
-        Column[] columns = new Column[3];
-        columns[0] = new ImmutableColumn("id", ColumnType.INTEGER, this, 1, 10, "integer", false, "remarks", true, null, true);
-        columns[1] = new ImmutableColumn("name", ColumnType.VARCHAR, this, 1, 50, "string", false, "remarks", false, null, false);
-        columns[2] = new ImmutableColumn("age", ColumnType.INTEGER, this, 1, 10, "integer", false, "remarks", false, null, false);
-        return columns;
+        return _columns;
     }
 
     @Override
@@ -85,6 +110,5 @@ public class DatahubTable extends AbstractTable {
         // TODO Auto-generated method stub
         return null;
     }
-
 
 }

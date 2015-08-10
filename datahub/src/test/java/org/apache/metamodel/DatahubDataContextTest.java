@@ -15,42 +15,25 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
-package org.apache.metamodel.datahub;
+ */package org.apache.metamodel;
 
-import org.apache.metamodel.schema.AbstractSchema;
-/**
- *  implementation of Datahub schema, final must be implemented in metamodel
- */
-import org.apache.metamodel.schema.Table;
+import junit.framework.TestCase;
 
-public class DatahubSchema extends AbstractSchema {
 
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
-    private String _name;
-    private Table[] _tables;
-
-    public DatahubSchema(String name, Table[] tables) {
-        _name = name;
-        _tables = tables;
+public class DatahubDataContextTest extends TestCase  
+{
+    
+    public void testConnection() {
+        String host = "localhost";
+        Integer port = 8081;
+        String username = "admin";
+        String password = "admin";
+        String tenantId = "demo";
+        
+        //DatahubDataContext context = new DatahubDataContext(host, port, username, password, tenantId);
+        //Schema schema = context.testGetMainSchema();
+        //assertEquals(4, schema.getTableCount());
+        //assertEquals(13, schema.getTableByName("CUSTOMERS").getColumnCount());
+        
     }
-
-    @Override
-    public String getName() {
-        return _name;
-    }
-
-    @Override
-    public Table[] getTables() {
-        return _tables;
-    }
-
-    @Override
-    public String getQuote() {
-        return null;
-    }
-
 }

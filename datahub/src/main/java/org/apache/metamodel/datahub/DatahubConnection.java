@@ -20,9 +20,15 @@ package org.apache.metamodel.datahub;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.protocol.HttpContext;
 
 
 
@@ -41,7 +47,8 @@ public class DatahubConnection {
     private final String _username;
     private final String _password;
     private final String _datahubContext = "datastores/orderdb";
-    //private final UserPreferences _userPreferences;
+    private final String _scheme;
+    HttpClientContext _context;
 
 
     public DatahubConnection(String hostname, Integer port, String username,
@@ -51,11 +58,22 @@ public class DatahubConnection {
         _tenantId = tenantId;
         _username = username;
         _password = password;
-        // TODO Auto-generated constructor stub
+        if (_https) {
+            _scheme = "https";
+        } else {
+            _scheme = "http";
+        }
+
+        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(new AuthScope(AuthScope.ANY_HOST,
+                AuthScope.ANY_PORT), new UsernamePasswordCredentials(getUsername(),
+                getPassword()));
+        _context = HttpClientContext.create();
+        _context.setCredentialsProvider(credsProvider);
     }
     
     public HttpClient getHttpClient() {
-        CloseableHttpClient httpClient  = HttpClientBuilder.create().build();
+        CloseableHttpClient httpClient  = HttpClients.createDefault();
         return httpClient;
     }
 
@@ -96,14 +114,10 @@ public class DatahubConnection {
         return getBaseUrl() + "/repository" + (StringUtils.isEmpty(_tenantId) ? "" : "/" + _tenantId);
     }
 
+    // http://{host}:{port}/DataCleaner-monitor/repository/demo/datastores/orderdb/PUBLIC.tables
     public String getBaseUrl() {
         StringBuilder sb = new StringBuilder();
-        if (_https) {
-            sb.append("https://");
-        } else {
-            sb.append("http://");
-        }
-        sb.append(_hostname);
+        sb.append(_scheme).append("://" + _hostname);
 
         if ((_https && _port != 443) || (!_https && _port != 80)) {
             // only add port if it differs from default ports of HTTP/HTTPS.
@@ -119,19 +133,23 @@ public class DatahubConnection {
         return sb.toString();
     }
 
-    String getDatahubUrl() {
-        String url = getRepositoryUrl() + "/"
+    String getDatahubUri() {
+        
+        String uri = getRepositoryUrl() + "/"
         + getDatahubContextPath(); 
-        return url;
+        return uri;
 
     }
     public HttpHost getHttpHost() {
-        String _scheme = _https ? "https" : "http" ;
         return new HttpHost(_hostname, _port, _scheme);  
     }
 
     public String getDatahubContextPath() {
         return _datahubContext;
+    }
+
+    public HttpContext getContext() {
+        return _context;
     }
 
 }
