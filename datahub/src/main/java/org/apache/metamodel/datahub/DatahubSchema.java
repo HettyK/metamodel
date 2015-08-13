@@ -18,6 +18,9 @@
  */
 package org.apache.metamodel.datahub;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.metamodel.schema.AbstractSchema;
 /**
  *  implementation of Datahub schema, final must be implemented in metamodel
@@ -31,11 +34,11 @@ public class DatahubSchema extends AbstractSchema {
      */
     private static final long serialVersionUID = 1L;
     private String _name;
-    private Table[] _tables;
+    private List<Table> _tables;
 
-    public DatahubSchema(String name, Table[] tables) {
-        _name = name;
-        _tables = tables;
+    public DatahubSchema() {
+        _name = "";
+        _tables = new ArrayList<Table>();
     }
 
     @Override
@@ -45,12 +48,20 @@ public class DatahubSchema extends AbstractSchema {
 
     @Override
     public Table[] getTables() {
-        return _tables;
+        return _tables.toArray(new Table[_tables.size()]);
     }
 
     @Override
     public String getQuote() {
         return null;
+    }
+
+    public void setName(String name) {
+        _name = name;        
+    }
+    
+    public void addTable(DatahubTable table) {
+        _tables.add(table);        
     }
 
 }

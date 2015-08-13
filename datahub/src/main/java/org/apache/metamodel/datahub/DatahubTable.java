@@ -18,12 +18,11 @@
  */
 package org.apache.metamodel.datahub;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.metamodel.schema.AbstractTable;
 import org.apache.metamodel.schema.Column;
-import org.apache.metamodel.schema.ColumnType;
-import org.apache.metamodel.schema.ImmutableColumn;
 import org.apache.metamodel.schema.Relationship;
 import org.apache.metamodel.schema.Schema;
 import org.apache.metamodel.schema.TableType;
@@ -42,35 +41,14 @@ public class DatahubTable extends AbstractTable {
      */
     private static final long serialVersionUID = 1L;
     private String _name;
-    private Column[] _columns;
+    private List<Column> _columns;
+    private DatahubSchema _schema;
 
-    public DatahubTable(String name, List<String> columnNames) {
-        _name = name;
-        _columns = createColumns(columnNames);
+    public DatahubTable() {
+        _name = "";
+        _columns = new ArrayList<Column>();
     }
 
-    private Column[] createColumns(List<String> columnNames) {
-        Column[] columns = new Column[columnNames.size()];
-        for (int i = 0; i < columnNames.size(); ++i) {
-
-            // name the name of the column
-            // type the type of the column
-            // table the table which the constructed column will pertain to
-            // columnNumber the column number of the column
-            // columnSize the size of the column
-            // nativeType the native type of the column
-            // nullable whether the column's values are nullable
-            // remarks the remarks of the column
-            // indexed whether the column is indexed or not
-            // quote the quote character(s) of the column
-            // primaryKey whether the column is a primary key or not
-            columns[i] = new ImmutableColumn(columnNames.get(i),
-                    ColumnType.VARCHAR, this, i + 1, 10, "string", true,
-                    "remarks", false, null, false);
-        }
-
-        return columns;
-    }
 
     @Override
     public String getName() {
@@ -79,13 +57,12 @@ public class DatahubTable extends AbstractTable {
 
     @Override
     public Column[] getColumns() {
-        return _columns;
+        return _columns.toArray(new Column[_columns.size()]);
     }
 
     @Override
     public Schema getSchema() {
-        // TODO Auto-generated method stub
-        return null;
+        return _schema;
     }
 
     @Override
@@ -109,6 +86,20 @@ public class DatahubTable extends AbstractTable {
     public String getQuote() {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    public void setName(String name) {
+        _name = name;        
+    }
+
+    public void add(Column column) {
+        _columns.add(column);
+    }
+
+
+    public void setSchema(DatahubSchema schema) {
+        _schema = schema;
+        
     }
 
 }

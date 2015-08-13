@@ -17,6 +17,7 @@
  * under the License.
  */package org.apache.metamodel;
 
+
 import junit.framework.TestCase;
 
 
@@ -30,10 +31,10 @@ public class DatahubDataContextTest extends TestCase
         String password = "admin";
         String tenantId = "demo";
         
-        //DatahubDataContext context = new DatahubDataContext(host, port, username, password, tenantId);
-        //Schema schema = context.testGetMainSchema();
-        //assertEquals(4, schema.getTableCount());
-        //assertEquals(13, schema.getTableByName("CUSTOMERS").getColumnCount());
+//        DatahubDataContext context = new DatahubDataContext(host, port, username, password, tenantId);
+//        Schema schema = context.testGetMainSchema();
+//        assertEquals(4, schema.getTableCount());
+//        assertEquals(13, schema.getTableByName("CUSTOMERS").getColumnCount());
         
     }
 }

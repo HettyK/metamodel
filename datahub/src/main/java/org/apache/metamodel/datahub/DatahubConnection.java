@@ -41,12 +41,13 @@ public class DatahubConnection {
 
     private final String _hostname;
     private final int _port;
-    private final String _contextPath = "DataCleaner-monitor";
-    private final boolean _https = false;
+    private final boolean _https;
     private final String _tenantId;
     private final String _username;
     private final String _password;
-    private final String _datahubContext = "datastores/orderdb";
+    // TODO changes these to the MDM context: "ui" and "/datastores/Golden record"
+    private final String _contextPath = "/DataCleaner-monitor";
+    private final String _datahubContext = "/datastores/orderdb";
     private final String _scheme;
     HttpClientContext _context;
 
@@ -55,6 +56,7 @@ public class DatahubConnection {
             String password, String tenantId) {
         _hostname = hostname;
         _port = port;
+        _https = false;
         _tenantId = tenantId;
         _username = username;
         _password = password;
@@ -114,7 +116,6 @@ public class DatahubConnection {
         return getBaseUrl() + "/repository" + (StringUtils.isEmpty(_tenantId) ? "" : "/" + _tenantId);
     }
 
-    // http://{host}:{port}/DataCleaner-monitor/repository/demo/datastores/orderdb/PUBLIC.tables
     public String getBaseUrl() {
         StringBuilder sb = new StringBuilder();
         sb.append(_scheme).append("://" + _hostname);
@@ -126,7 +127,6 @@ public class DatahubConnection {
         }
 
         if (!StringUtils.isEmpty(_contextPath)) {
-            sb.append('/');
             sb.append(_contextPath);
         }
 
@@ -135,8 +135,7 @@ public class DatahubConnection {
 
     String getDatahubUri() {
         
-        String uri = getRepositoryUrl() + "/"
-        + getDatahubContextPath(); 
+        String uri = getRepositoryUrl() + getDatahubContextPath(); 
         return uri;
 
     }
