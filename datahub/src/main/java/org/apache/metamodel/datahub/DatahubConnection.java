@@ -53,10 +53,10 @@ public class DatahubConnection {
 
 
     public DatahubConnection(String hostname, Integer port, String username,
-            String password, String tenantId) {
+            String password, String tenantId, boolean https) {
         _hostname = hostname;
         _port = port;
-        _https = false;
+        _https = https;
         _tenantId = tenantId;
         _username = username;
         _password = password;
@@ -133,12 +133,6 @@ public class DatahubConnection {
         return sb.toString();
     }
 
-    String getDatahubUri() {
-        
-        String uri = getRepositoryUrl() + getDatahubContextPath(); 
-        return uri;
-
-    }
     public HttpHost getHttpHost() {
         return new HttpHost(_hostname, _port, _scheme);  
     }

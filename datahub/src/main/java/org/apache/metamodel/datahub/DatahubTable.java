@@ -72,19 +72,16 @@ public class DatahubTable extends AbstractTable {
 
     @Override
     public Relationship[] getRelationships() {
-        // TODO Auto-generated method stub
-        return null;
+        return new Relationship[0];
     }
 
     @Override
     public String getRemarks() {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public String getQuote() {
-        // TODO Auto-generated method stub
         return null;
     }
 

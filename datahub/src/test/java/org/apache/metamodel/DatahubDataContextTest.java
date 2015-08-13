@@ -20,21 +20,44 @@
 
 import junit.framework.TestCase;
 
+import org.apache.metamodel.datahub.DatahubDataContext;
+import org.apache.metamodel.schema.Schema;
+
 
 public class DatahubDataContextTest extends TestCase  
 {
+    public void testDummy() {
+        // there should be at least one test  method
+    }
     
-    public void testConnection() {
+    public void xtestMDMRepoConnection() {
+        String host = "mdmregtest.humaninference.com";
+        Integer port = 8443;
+        String username = "cdiadmin";
+        String password = "cdi123";
+        String tenantId = "mdmregtest";
+        boolean https = false;
+        
+        DatahubDataContext context = new DatahubDataContext(host, port, username, password, tenantId, https);
+        Schema schema = context.testGetMainSchema();
+        assertEquals(4, schema.getTableCount());
+        assertEquals(13, schema.getTableByName("CUSTOMERS").getColumnCount());
+        
+    }
+
+    public void xtestMonitorDemoRepoConnection() {
         String host = "localhost";
         Integer port = 8081;
         String username = "admin";
         String password = "admin";
         String tenantId = "demo";
+        boolean https = false;
         
-//        DatahubDataContext context = new DatahubDataContext(host, port, username, password, tenantId);
-//        Schema schema = context.testGetMainSchema();
-//        assertEquals(4, schema.getTableCount());
-//        assertEquals(13, schema.getTableByName("CUSTOMERS").getColumnCount());
+        DatahubDataContext context = new DatahubDataContext(host, port, username, password, tenantId, https);
+        Schema schema = context.testGetMainSchema();
+        assertEquals(6, schema.getTableCount());
+        assertEquals(13, schema.getTableByName("CUSTOMERS").getColumnCount());
         
     }
+
 }

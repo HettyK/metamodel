@@ -49,9 +49,9 @@ public class DatahubDataContext extends QueryPostprocessDataContext implements
     private DatahubConnection _connection;
 
     public DatahubDataContext(String host, Integer port, String username,
-            String password, String tenantId) {
+            String password, String tenantId, boolean https) {
         _connection = new DatahubConnection(host, port, username, password,
-                tenantId);
+                tenantId, https);
 
     }
 
@@ -78,22 +78,43 @@ public class DatahubDataContext extends QueryPostprocessDataContext implements
 
     @Override
     protected Schema getMainSchema() throws MetaModelException {
-        String schemaName = getMainSchemaName();
-        String uri = _connection.getDatahubUri() + ".schemas";
+        List<String> datastoreNames = getDataStoreNames();
+        DatahubSchema uberSchema = new DatahubSchema();
+        for (String datastoreName : datastoreNames) {
+            //String schemaName = getMainSchemaName();
+            String uri = _connection.getRepositoryUrl() + "/datastores" + "/"
+                    + datastoreName + ".schemas";
+            logger.debug("request {}", uri);
+            HttpGet request = new HttpGet(uri);
+            try {
+                HttpResponse response = executeRequest(request);
+                String result = EntityUtils.toString(response.getEntity());
+                JsonParserHelper parser = new JsonParserHelper();
+                DatahubSchema schema = parser.parseJsonSchema(result);
+                uberSchema.addTables(schema.getTables());
+
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return uberSchema;
+    }
+
+    private List<String> getDataStoreNames() {
+        String uri = _connection.getRepositoryUrl() + "/datastores";
         logger.debug("request {}", uri);
         HttpGet request = new HttpGet(uri);
         try {
             HttpResponse response = executeRequest(request);
             String result = EntityUtils.toString(response.getEntity());
             JsonParserHelper parser = new JsonParserHelper();
-            DatahubSchema schema = parser.parseJsonSchema(result, schemaName);
-            return schema;
+            List<String> datastoreNames = parser.parseDataStoreArray(result);
+            return datastoreNames;
 
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
-
 
     public Schema testGetMainSchema() {
         return getMainSchema();
@@ -124,29 +145,30 @@ public class DatahubDataContext extends QueryPostprocessDataContext implements
 
     @Override
     protected String getMainSchemaName() throws MetaModelException {
-        return "PUBLIC";
+        return "MDM";
     }
 
     @Override
     protected DataSet materializeMainSchemaTable(Table table, Column[] columns,
             int maxRows) {
-            return new DatahubDataSet(columns);
+        return new DatahubDataSet(columns);
 
-    // http://localhost:8081/DataCleaner-monitor/repository/demo/datastores/orderdb.query?q=SELECT+*+FROM+PUBLIC.CUSTOMERS
-//    private HttpResponse executeMonitorQuery(String query) {
-//        logger.info("Executing SOQL query: {}", query);
-//        String uri = _connection.getDatahubUri() + "/" + _schemaName + ".query";
-//        logger.debug("request {}", uri);
-//        HttpGet request = new HttpGet(uri);
-//        try {
-//            HttpResponse response = executeRequest(request);
-//            String result = EntityUtils.toString(response.getEntity());
-//            List<String> columnNames = JsonParserHelper.parseArray(result);
-//            return columnNames;
-//
-//        } catch (Exception e) {
-//            throw new IllegalStateException(e);
-//        }
-//    }
+        // http://localhost:8081/DataCleaner-monitor/repository/demo/datastores/orderdb.query?q=SELECT+*+FROM+PUBLIC.CUSTOMERS
+        // private HttpResponse executeMonitorQuery(String query) {
+        // logger.info("Executing SOQL query: {}", query);
+        // String uri = _connection.getDatahubUri() + "/" + _schemaName +
+        // ".query";
+        // logger.debug("request {}", uri);
+        // HttpGet request = new HttpGet(uri);
+        // try {
+        // HttpResponse response = executeRequest(request);
+        // String result = EntityUtils.toString(response.getEntity());
+        // List<String> columnNames = JsonParserHelper.parseArray(result);
+        // return columnNames;
+        //
+        // } catch (Exception e) {
+        // throw new IllegalStateException(e);
+        // }
+        // }
     }
 }

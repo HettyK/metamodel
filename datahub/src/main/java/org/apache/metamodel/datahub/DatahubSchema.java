@@ -64,4 +64,10 @@ public class DatahubSchema extends AbstractSchema {
         _tables.add(table);        
     }
 
+    public void addTables(Table[] tables) {
+        for (int i = 0; i < tables.length; ++i) {
+            _tables.add(tables[i]);
+        }
+    }
+
 }

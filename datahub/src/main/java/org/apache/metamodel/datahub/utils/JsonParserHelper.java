@@ -18,6 +18,10 @@
 package org.apache.metamodel.datahub.utils;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.metamodel.datahub.DatahubSchema;
 import org.apache.metamodel.datahub.DatahubTable;
@@ -28,6 +32,14 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 
 public class JsonParserHelper {
+
+    private static final Set<String> dataStoreTypes = new HashSet<String>() {
+        {
+            add("GoldenRecordDatastore");
+            add("MDMDatastore");
+            add("SourceRecordGoldenFormatDatastore");
+        }
+    };
 
     private static enum DatastoreObject {
         DATASTORE {
@@ -58,21 +70,23 @@ public class JsonParserHelper {
 
     private DatastoreObject _currentObject;
     private String _currentFieldname;
+    DatahubSchema _currentSchema;
     private DatahubTable _currentTable;
     private DatahubColumnBuilder _currentColumnBuilder;
     private String _schemaName;
     private DatahubSchema _resultSchema;
 
+    private String _currentDataStoreName;
+    List<String> _dataStoreNames = new ArrayList<String>();
+
     public JsonParserHelper() {
 
     }
 
-    public DatahubSchema parseJsonSchema(String result, String schemaName)
+    public DatahubSchema parseJsonSchema(String result)
             throws JsonParseException, IOException {
         _currentObject = DatastoreObject.DATASTORE;
         _currentFieldname = "";
-        _schemaName = schemaName;
-        _resultSchema = new DatahubSchema();
         JsonFactory factory = new JsonFactory();
         JsonParser parser = factory.createParser(result);
         JsonToken token = parser.nextToken();
@@ -116,9 +130,14 @@ public class JsonParserHelper {
 
     private void addObjectToSchema() {
         switch (_currentObject) {
+        case SCHEMA:
+            if (!"INFORMATION_SCHEMA".equals(_currentSchema.getName())) {
+                _resultSchema = _currentSchema;
+            }
+            break;
         case TABLE:
-            _currentTable.setSchema(_resultSchema);
-            _resultSchema.addTable(_currentTable);
+            _currentTable.setSchema(_currentSchema);
+            _currentSchema.addTable(_currentTable);
             break;
         case COLUMN:
             _currentColumnBuilder.withTable(_currentTable);
@@ -130,6 +149,8 @@ public class JsonParserHelper {
 
     private void createNewObject() {
         switch (_currentObject) {
+        case SCHEMA:
+            _currentSchema = new DatahubSchema();
         case TABLE:
             _currentTable = new DatahubTable();
             break;
@@ -210,8 +231,41 @@ public class JsonParserHelper {
     }
 
     private void handleSchemaField(String fieldName, String fieldValue) {
-        if (fieldName.equals("name") && fieldValue.equals(_schemaName)) {
-            _resultSchema.setName(fieldValue);
+        if (fieldName.equals("name")) {
+            _currentSchema.setName(fieldValue);
         }
+    }
+
+    public List<String> parseDataStoreArray(String result) throws IOException {
+        JsonFactory factory = new JsonFactory();
+        JsonParser parser = factory.createParser(result);
+        JsonToken token = parser.nextToken();
+        while (token != null) {
+            switch (parser.getCurrentToken()) {
+            case FIELD_NAME:
+                _currentFieldname = parser.getText();
+                break;
+            case VALUE_STRING:
+                handleDataStoreValue(parser.getText());
+                break;
+            default:
+                break;
+            }
+            token = parser.nextToken();
+        }
+
+        return _dataStoreNames;
+    }
+
+    private void handleDataStoreValue(String value) {
+        if (_currentFieldname.equals("name")) {
+            _currentDataStoreName = value;
+        } else if (_currentFieldname.equals("type")
+                && !(value.equals("CsvDatastore"))) {
+            // TODO Now showing all non-csv datastores. Should we keep a list
+            // here of datastore types we DO want to show???
+            _dataStoreNames.add(_currentDataStoreName);
+        }
+
     }
 }
