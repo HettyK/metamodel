@@ -47,12 +47,38 @@ public class DatahubDataContext extends QueryPostprocessDataContext implements
             .getLogger(DatahubDataContext.class);
 
     private DatahubConnection _connection;
+    
+    private DatahubSchema _schema;
 
     public DatahubDataContext(String host, Integer port, String username,
             String password, String tenantId, boolean https) {
         _connection = new DatahubConnection(host, port, username, password,
                 tenantId, https);
+        _schema = getDatahubSchema();
 
+    }
+
+    private DatahubSchema getDatahubSchema() {
+        List<String> datastoreNames = getDataStoreNames();
+        _schema = new DatahubSchema();
+        for (String datastoreName : datastoreNames) {
+            // String schemaName = getMainSchemaName();
+            String uri = _connection.getRepositoryUrl() + "/datastores" + "/"
+                    + datastoreName + ".schemas";
+            logger.debug("request {}", uri);
+            HttpGet request = new HttpGet(uri);
+            try {
+                HttpResponse response = executeRequest(request);
+                String result = EntityUtils.toString(response.getEntity());
+                JsonParserHelper parser = new JsonParserHelper();
+                DatahubSchema schema = parser.parseJsonSchema(result);
+                _schema.addTables(schema.getTables());
+
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return _schema;
     }
 
     @Override
@@ -78,26 +104,7 @@ public class DatahubDataContext extends QueryPostprocessDataContext implements
 
     @Override
     protected Schema getMainSchema() throws MetaModelException {
-        List<String> datastoreNames = getDataStoreNames();
-        DatahubSchema uberSchema = new DatahubSchema();
-        for (String datastoreName : datastoreNames) {
-            //String schemaName = getMainSchemaName();
-            String uri = _connection.getRepositoryUrl() + "/datastores" + "/"
-                    + datastoreName + ".schemas";
-            logger.debug("request {}", uri);
-            HttpGet request = new HttpGet(uri);
-            try {
-                HttpResponse response = executeRequest(request);
-                String result = EntityUtils.toString(response.getEntity());
-                JsonParserHelper parser = new JsonParserHelper();
-                DatahubSchema schema = parser.parseJsonSchema(result);
-                uberSchema.addTables(schema.getTables());
-
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
-        }
-        return uberSchema;
+        return _schema;
     }
 
     private List<String> getDataStoreNames() {
@@ -151,24 +158,42 @@ public class DatahubDataContext extends QueryPostprocessDataContext implements
     @Override
     protected DataSet materializeMainSchemaTable(Table table, Column[] columns,
             int maxRows) {
-        return new DatahubDataSet(columns);
+            
+            String query = createQuery(table, columns, maxRows);
+            return new DatahubDataSet(columns);
+//            String uri = _connection.getRepositoryUrl() + "/datastores" + "/"
+//                    + datastoreName + ".schemas";
+//            logger.debug("request {}", uri);
+//            HttpGet request = new HttpGet(uri);
+//            try {
+//                HttpResponse response = executeRequest(request);
+//                String result = EntityUtils.toString(response.getEntity());
+//                JsonParserHelper parser = new JsonParserHelper();
+//                DatahubSchema schema = parser.parseJsonSchema(result);
+//                uberSchema.addTables(schema.getTables());
+//
+//            } catch (Exception e) {
+//                throw new IllegalStateException(e);
+//            }
+            
 
-        // http://localhost:8081/DataCleaner-monitor/repository/demo/datastores/orderdb.query?q=SELECT+*+FROM+PUBLIC.CUSTOMERS
-        // private HttpResponse executeMonitorQuery(String query) {
-        // logger.info("Executing SOQL query: {}", query);
-        // String uri = _connection.getDatahubUri() + "/" + _schemaName +
-        // ".query";
-        // logger.debug("request {}", uri);
-        // HttpGet request = new HttpGet(uri);
-        // try {
-        // HttpResponse response = executeRequest(request);
-        // String result = EntityUtils.toString(response.getEntity());
-        // List<String> columnNames = JsonParserHelper.parseArray(result);
-        // return columnNames;
-        //
-        // } catch (Exception e) {
-        // throw new IllegalStateException(e);
-        // }
-        // }
+    }
+
+    private String createQuery(Table table, Column[] columns, int maxRows) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ");
+        for (int i = 0; i < columns.length; i++) {
+            if (i != 0) {
+                sb.append(',');
+            }
+            sb.append(columns[i].getName());
+        }
+        sb.append(" FROM ");
+        sb.append(table.getName());
+
+        if (maxRows > 0) {
+            sb.append(" LIMIT " + maxRows);
+        }
+        return sb.toString();
     }
 }
