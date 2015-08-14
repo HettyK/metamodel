@@ -25,6 +25,7 @@ import junit.framework.TestCase;
 
 import org.apache.metamodel.datahub.DatahubSchema;
 import org.apache.metamodel.datahub.utils.JsonParserHelper;
+import org.apache.metamodel.schema.Column;
 import org.apache.metamodel.schema.ColumnType;
 import org.apache.metamodel.schema.Table;
 
@@ -38,7 +39,7 @@ public class JsonParserHelperTest extends TestCase {
                 + "{\"tables\":[],\"name\":\"INFORMATION_SCHEMA\"},{\"tables\":["
                 + "{\"name\":\"CUSTOMERS\",\"columns\":["
                 + "{\"indexed\":true,\"quote\":\"\\\"\",\"primaryKey\":true,\"name\":\"CUSTOMERNUMBER\",\"remarks\":\"\",\"nullable\":false,\"type\":\"INTEGER\",\"nativeType\":\"INTEGER\",\"size\":\"0\",\"number\": 0},"
-                + "{\"indexed\":false,\"quote\":\"\\\"\",\"primaryKey\":false,\"name\":\"CUSTOMERNAME\",\"remarks\":\"\",\"nullable\":false,\"type\":\"VARCHAR\",\"nativeType\":\"VARCHAR\",\"size\":\"50\",\"number\":1},"
+                + "{\"indexed\":true,\"quote\":null,\"primaryKey\":false,\"name\":\"CUSTOMERNAME\",\"remarks\":null,\"nullable\":false,\"type\":\"VARCHAR\",\"nativeType\":\"VARCHAR\",\"size\":\"50\",\"number\":1},"
                 + "{\"indexed\":false,\"quote\":\"\\\"\",\"primaryKey\":false,\"name\":\"CONTACTLASTNAME\",\"remarks\":\"\",\"nullable\":false,\"type\":\"VARCHAR\",\"nativeType\":\"VARCHAR\",\"size\":\"50\",\"number\":2},"
                 + "{\"indexed\":false,\"quote\":\"\\\"\",\"primaryKey\":false,\"name\":\"CONTACTFIRSTNAME\",\"remarks\":\"\",\"nullable\":false,\"type\":\"VARCHAR\",\"nativeType\":\"VARCHAR\",\"size\":\"50\",\"number\":3},"
                 + "{\"indexed\":false,\"quote\":\"\\\"\",\"primaryKey\":false,\"name\":\"PHONE\",\"remarks\":\"\",\"nullable\":false,\"type\":\"VARCHAR\",\"nativeType\":\"VARCHAR\",\"size\":\"50\",\"number\": 4}]},"
@@ -54,6 +55,17 @@ public class JsonParserHelperTest extends TestCase {
         Table customersTable = schema.getTableByName("CUSTOMERS");
         assertNotNull(customersTable);
         assertEquals(5, customersTable.getColumnCount());
+        Column customernameColumn = customersTable.getColumnByName("CUSTOMERNAME");
+        assertEquals(true, customernameColumn.isIndexed());
+        assertEquals(false, customernameColumn.isPrimaryKey());
+        assertEquals(false, customernameColumn.isNullable().booleanValue());
+        assertEquals(null, customernameColumn.getQuote());
+        assertEquals(null, customernameColumn.getRemarks());
+        assertEquals(customersTable, customernameColumn.getTable());
+        assertEquals(ColumnType.VARCHAR, customernameColumn.getType());
+        assertEquals("VARCHAR", customernameColumn.getNativeType());
+        assertEquals(50, customernameColumn.getColumnSize().intValue());
+        assertEquals(1, customernameColumn.getColumnNumber());
         Table suppliersTable = schema.getTableByName("SUPPLIERS");
         assertNotNull(suppliersTable);
         assertEquals(3, suppliersTable.getColumnCount());
